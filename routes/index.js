@@ -48,12 +48,18 @@ function createResultObject(transaction) {
 }
 
 router.get('/', function (req, res) {
-  res.redirect('/checkouts/new');
+  res.redirect('/checkouts/hosted');
 });
 
 router.get('/checkouts/new', function (req, res) {
   gateway.clientToken.generate({}, function (err, response) {
     res.render('checkouts/new', {clientToken: response.clientToken, messages: req.flash('error')});
+  });
+});
+
+router.get('/checkouts/hosted', function (req, res) {
+  gateway.clientToken.generate({}, function (err, response) {
+    res.render('checkouts/hosted', {clientToken: response.clientToken, messages: req.flash('error')});
   });
 });
 
