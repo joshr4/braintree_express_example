@@ -48,18 +48,18 @@ function createResultObject(transaction) {
 }
 
 router.get('/', function (req, res) {
-  res.redirect('/checkouts/hosted');
+  res.redirect('/checkouts/new');
 });
+
+// router.get('/checkouts/newdropin', function (req, res) {
+//   gateway.clientToken.generate({}, function (err, response) {
+//     res.render('checkouts/newdropin', {clientToken: response.clientToken, messages: req.flash('error')});
+//   });
+// });
 
 router.get('/checkouts/new', function (req, res) {
   gateway.clientToken.generate({}, function (err, response) {
     res.render('checkouts/new', {clientToken: response.clientToken, messages: req.flash('error')});
-  });
-});
-
-router.get('/checkouts/hosted', function (req, res) {
-  gateway.clientToken.generate({}, function (err, response) {
-    res.render('checkouts/hosted', {clientToken: response.clientToken, messages: req.flash('error')});
   });
 });
 

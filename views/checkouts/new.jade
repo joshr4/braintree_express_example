@@ -3,47 +3,91 @@ extends ../layout
 block content
   .wrapper: .checkout.container: .content
     header
-      h1 Hi, #[br] Let's test a transaction
-      p Make a test payment with Braintree using PayPal or a card
+      p Make a test payment with Braintree hostedfields
 
     form#payment-form(action="/checkouts", method="post")
-      section
-        label(for="amount")
-          span.input-label Amount
-          .input-wrapper.amount-wrapper
-            input#amount(name="amount" type="tel" min="1" value="10")
+      label(for="amount")
+        span.input-label Amount
+        .input-wrapper.amount-wrapper
+          input#amount(name="amount" type="tel" min="1" value="10")
 
-        .bt-drop-in-wrapper
-          #bt-dropin
+      label(for="card-number") Card Number
+      div#card-number
 
+      label(for="cvv") CVV
+      div#cvv
+
+      label(for="expiration-date") Expiration Date
+      div#expiration-date
       input#nonce(type="hidden" name="payment_method_nonce")
-      button.button(type="submit")
-        span Test DropIn Transaction
+      input(type="submit" value="Pay" disabled)
 
-  script(src="https://js.braintreegateway.com/web/dropin/1.11.0/js/dropin.min.js")
+  script(src="https://js.braintreegateway.com/web/3.35.0/js/client.min.js")
+  script(src="https://js.braintreegateway.com/web/3.35.0/js/hosted-fields.min.js")
   script.
     var form = document.querySelector('#payment-form');
+    var submit = document.querySelector('input[type="submit"]');
     var token = '#{clientToken}';
 
-    braintree.dropin.create({
-      authorization: token,
-      container: '#bt-dropin',
-      paypal: {
-        flow: 'vault'
-      }
-    }, function (createErr, instance) {
-      form.addEventListener('submit', function (event) {
-        event.preventDefault();
+    braintree.client.create({
+      authorization: token
+    }, function (clientErr, clientInstance) {
+        if (clientErr) {
+          console.error(clientErr);
+          return;
+        }
 
-        instance.requestPaymentMethod(function (err, payload) {
-          if (err) {
-            console.log('Error', err);
+        // This example shows Hosted Fields, but you can also use this
+        // client instance to create additional components here, such as
+        // PayPal or Data Collector.
+
+        braintree.hostedFields.create({
+          client: clientInstance,
+          styles: {
+            'input': {
+              'font-size': '14px'
+            },
+            'input.invalid': {
+              'color': 'red'
+            },
+            'input.valid': {
+              'color': 'green'
+            }
+          },
+          fields: {
+            number: {
+              selector: '#card-number',
+              placeholder: '4111 1111 1111 1111'
+            },
+            cvv: {
+              selector: '#cvv',
+              placeholder: '123'
+            },
+            expirationDate: {
+              selector: '#expiration-date',
+              placeholder: '10/2019'
+            }
+          }
+        }, function (hostedFieldsErr, hostedFieldsInstance) {
+          if (hostedFieldsErr) {
+            console.error(hostedFieldsErr);
             return;
           }
 
-          // Add the nonce to the form and submit
-          document.querySelector('#nonce').value = payload.nonce;
-          form.submit();
+          submit.removeAttribute('disabled');
+
+          form.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            hostedFieldsInstance.tokenize(function (tokenizeErr, payload) {
+              if (tokenizeErr) {
+                console.error(tokenizeErr);
+                return;
+              }
+              document.querySelector('#nonce').value = payload.nonce;
+              console.log('Got a nonce: ' + payload.nonce);
+              form.submit();
+            });
+          }, false);
         });
       });
-    });
