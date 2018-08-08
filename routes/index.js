@@ -78,21 +78,45 @@ router.post('/checkouts', function (req, res) {
   var amount = req.body.amount; // In production you should not take amounts directly from clients
   var nonce = req.body.payment_method_nonce;
 
-  gateway.transaction.sale({
-    amount: amount,
+  gateway.customer.create({
     paymentMethodNonce: nonce,
-    options: {
-      submitForSettlement: true
+    firstName: 'Fred',
+    lastName: 'Jones',
+    creditCard: {
+      options: {
+        verifyCard: true
+      }
     }
   }, function (err, result) {
-    if (result.success || result.transaction) {
-      res.redirect('checkouts/' + result.transaction.id);
-    } else {
-      transactionErrors = result.errors.deepErrors();
-      req.flash('error', {msg: formatErrors(transactionErrors)});
-      res.redirect('checkouts/new');
-    }
+    gateway.transaction.sale({
+      paymentMethodToken: result.customer.paymentMethods[0].token,
+      amount: amount
+    }, function (err, result) {
+      if (result.success || result.transaction) {
+        res.redirect('checkouts/' + result.transaction.id);
+      } else {
+        transactionErrors = result.errors.deepErrors();
+        req.flash('error', {msg: formatErrors(transactionErrors)});
+        res.redirect('checkouts/new');
+      }
+    });
   });
+
+  // gateway.transaction.sale({
+  //   amount: amount,
+  //   paymentMethodNonce: nonce,
+  //   options: {
+  //     submitForSettlement: true
+  //   }
+  // }, function (err, result) {
+  //   if (result.success || result.transaction) {
+  //     res.redirect('checkouts/' + result.transaction.id);
+  //   } else {
+  //     transactionErrors = result.errors.deepErrors();
+  //     req.flash('error', {msg: formatErrors(transactionErrors)});
+  //     res.redirect('checkouts/new');
+  //   }
+  // });
 });
 
 module.exports = router;
