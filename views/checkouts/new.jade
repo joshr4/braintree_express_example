@@ -33,6 +33,7 @@ block content
       authorization: token
     }, function (clientErr, clientInstance) {
         if (clientErr) {
+          alert(clientErr)
           console.error(clientErr);
           return;
         }
@@ -70,6 +71,7 @@ block content
           }
         }, function (hostedFieldsErr, hostedFieldsInstance) {
           if (hostedFieldsErr) {
+            alert(hostedFieldsErr)
             console.error(hostedFieldsErr);
             return;
           }
@@ -81,10 +83,12 @@ block content
 
             hostedFieldsInstance.tokenize(function (tokenizeErr, payload) {
               if (tokenizeErr) {
+                alert(tokenizeErr)
                 console.error(tokenizeErr);
                 return;
               }
               document.querySelector('#nonce').value = payload.nonce;
+
               console.log('Got a nonce: ' + payload.nonce);
               form.submit();
             });

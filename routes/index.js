@@ -59,7 +59,7 @@ router.get('/', function (req, res) {
 
 router.get('/checkouts/new', function (req, res) {
   gateway.clientToken.generate({}, function (err, response) {
-    res.render('checkouts/new', {clientToken: response.clientToken, messages: req.flash('error')});
+    res.render('checkouts/new', { clientToken: response.clientToken, messages: req.flash('error') });
   });
 });
 
@@ -69,12 +69,12 @@ router.get('/checkouts/:id', function (req, res) {
 
   gateway.transaction.find(transactionId, function (err, transaction) {
     result = createResultObject(transaction);
-    res.render('checkouts/show', {transaction: transaction, result: result});
+    res.render('checkouts/show', { transaction: transaction, result: result });
   });
 });
 
 router.post('/checkouts', function (req, res) {
-  var transactionErrors;
+  var transactionErrors, validationErrors;
   var amount = req.body.amount; // In production you should not take amounts directly from clients
   var nonce = req.body.payment_method_nonce;
 
@@ -88,18 +88,25 @@ router.post('/checkouts', function (req, res) {
       }
     }
   }, function (err, result) {
-    gateway.transaction.sale({
-      paymentMethodToken: result.customer.paymentMethods[0].token,
-      amount: amount
-    }, function (err, result) {
-      if (result.success || result.transaction) {
-        res.redirect('checkouts/' + result.transaction.id);
-      } else {
-        transactionErrors = result.errors.deepErrors();
-        req.flash('error', {msg: formatErrors(transactionErrors)});
-        res.redirect('checkouts/new');
-      }
-    });
+    if (result.success || result.transaction) {
+      gateway.transaction.sale({
+        paymentMethodToken: result.customer.paymentMethods[0].token,
+        amount: amount
+      }, function (err, result) {
+        if (result.success || result.transaction) {
+          res.redirect('checkouts/' + result.transaction.id);
+        } else {
+          transactionErrors = result.errors.deepErrors();
+          req.flash('error', { msg: formatErrors(transactionErrors) });
+          res.redirect('checkouts/new');
+        }
+      });
+    } else {
+      validationErrors = result.verification;
+      if (validationErrors.status === 'processor_declined' || validationErrors.status === 'failed') req.flash('error', { msg: `Proceesor Declined - Error: ${validationErrors.processorResponseCode} : ${validationErrors.processorResponseText}` });
+      if (validationErrors.status === 'gateway_rejected') req.flash('error', { msg: `Gateway Rejected - Reason: ${validationErrors.gatewayRejectionReason}` });
+      res.redirect('checkouts/new');
+    }
   });
 
   // gateway.transaction.sale({
