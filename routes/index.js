@@ -53,7 +53,10 @@ router.get('/', function (req, res) {
 
 router.get('/checkouts/new', function (req, res) {
   gateway.clientToken.generate({}, function (err, response) {
-    res.render('checkouts/new', { clientToken: response.clientToken, messages: req.flash('error') });
+    res.render('checkouts/new', {
+      clientToken: response.clientToken,
+      messages: req.flash('error')
+    });
   });
 });
 
@@ -63,7 +66,10 @@ router.get('/checkouts/:id', function (req, res) {
 
   gateway.transaction.find(transactionId, function (err, transaction) {
     result = createResultObject(transaction);
-    res.render('checkouts/show', { transaction: transaction, result: result });
+    res.render('checkouts/show', {
+      transaction: transaction,
+      result: result
+    });
   });
 });
 
@@ -72,7 +78,7 @@ router.post('/checkouts', function (req, res) {
   var amount = req.body.amount; // In production you should not take amounts directly from clients
   var nonce = req.body.payment_method_nonce;
 
-  gateway.customer.create({
+  gateway.customer.create({ //create customer/card entry in vault with nonce provided in the client POST request
     paymentMethodNonce: nonce,
     firstName: 'Fred',
     lastName: 'Jones',
@@ -83,22 +89,28 @@ router.post('/checkouts', function (req, res) {
     }
   }, function (err, result) {
     if (result.success || result.transaction) {
-      gateway.transaction.sale({
-        paymentMethodToken: result.customer.paymentMethods[0].token,
+      gateway.transaction.sale({ //if successful, generate a new transaction based on amount provided in the inital POST request
+        paymentMethodToken: result.customer.paymentMethods[0].token, //hardcoded to use the first paymentMethod, which is what was just added to the vault
         amount: amount
       }, function (err, result) {
         if (result.success || result.transaction) {
           res.redirect('checkouts/' + result.transaction.id);
-        } else {
+        } else { //transaction error handling
           transactionErrors = result.errors.deepErrors();
-          req.flash('error', { msg: formatErrors(transactionErrors) });
+          req.flash('error', {
+            msg: formatErrors(transactionErrors)
+          });
           res.redirect('checkouts/new');
         }
       });
     } else {
       validationErrors = result.verification;
-      if (validationErrors.status === 'processor_declined' || validationErrors.status === 'failed') req.flash('error', { msg: `Proceesor Declined - Error: ${validationErrors.processorResponseCode} : ${validationErrors.processorResponseText}` });
-      if (validationErrors.status === 'gateway_rejected') req.flash('error', { msg: `Gateway Rejected - Reason: ${validationErrors.gatewayRejectionReason}` });
+      if (validationErrors.status === 'processor_declined' || validationErrors.status === 'failed') req.flash('error', {
+        msg: `Proceesor Declined - Error: ${validationErrors.processorResponseCode} : ${validationErrors.processorResponseText}`
+      });
+      if (validationErrors.status === 'gateway_rejected') req.flash('error', {
+        msg: `Gateway Rejected - Reason: ${validationErrors.gatewayRejectionReason}`
+      });
       res.redirect('checkouts/new');
     }
   });
