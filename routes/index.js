@@ -51,12 +51,6 @@ router.get('/', function (req, res) {
   res.redirect('/checkouts/new');
 });
 
-// router.get('/checkouts/newdropin', function (req, res) {
-//   gateway.clientToken.generate({}, function (err, response) {
-//     res.render('checkouts/newdropin', {clientToken: response.clientToken, messages: req.flash('error')});
-//   });
-// });
-
 router.get('/checkouts/new', function (req, res) {
   gateway.clientToken.generate({}, function (err, response) {
     res.render('checkouts/new', { clientToken: response.clientToken, messages: req.flash('error') });
@@ -108,22 +102,6 @@ router.post('/checkouts', function (req, res) {
       res.redirect('checkouts/new');
     }
   });
-
-  // gateway.transaction.sale({
-  //   amount: amount,
-  //   paymentMethodNonce: nonce,
-  //   options: {
-  //     submitForSettlement: true
-  //   }
-  // }, function (err, result) {
-  //   if (result.success || result.transaction) {
-  //     res.redirect('checkouts/' + result.transaction.id);
-  //   } else {
-  //     transactionErrors = result.errors.deepErrors();
-  //     req.flash('error', {msg: formatErrors(transactionErrors)});
-  //     res.redirect('checkouts/new');
-  //   }
-  // });
 });
 
 module.exports = router;
